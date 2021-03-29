@@ -1,8 +1,3 @@
-#TODO:
-# - better documentation
-# - Better pop operation and subtree deletion design
-# - Adaptive max_depth calculation
-
 
 class Quad:
     max_points = 3
