@@ -1,9 +1,8 @@
-
 class Quad:
-    max_points = 3
-    max_depth = 5
+    max_points = 0
+    max_depth = 3
 
-    def __init__(self, bounds, depth, parent=None):
+    def __init__(self, bounds: (int, int, int, int), depth: int, parent=None):
         self.depth = depth
         self.bounds = bounds  # abXY
         self._parent = parent
@@ -32,21 +31,30 @@ class Quad:
     def insert_point(self, point):
         """
         Append a point to a quadrant or generate a new sub-quad and append to that quad
+        Return deepest quad containing point
         """
         q = self.__get_quadrant(point)
 
-        # Base Case:: eiter append points at max depth or append if quad has no children && does not exceed max pts
+        # Base Case:: either append points at max depth or append if quad has no children && does not exceed max pts
         if self.depth >= self.max_depth or (not self.children and len(self.points) < self.max_points):
             self.points.add(point)
+            print("latest  child", self.depth, "r:",self.bounds)
+            return self
 
         # Case 2:: if quad has existing sub-quads, go to the appropriate sub-quad
         elif self.children:
-            self.children[q].insert_point(point)
+            #print(f"{self.depth} case 2 executed")
+            #print("if quad has existing sub-quads, go to the appropriate sub-quad")
+            #print("depth", self.depth, "r:", self.bounds)
+            return self.children[q].insert_point(point)
 
         # Case 3:: If quad has no  children, and exceeds max pts, create sub-quad and insert pt in appropriate sub-quad
         else:
+            #print(f"{self.depth} case 3 executed")
+            #print("If quad has no  children, and exceeds max pts, create sub-quad and insert pt in appropriate sub-quad")
             self.children = self.__create_subquad()
-            self.children[q].insert_point(point)
+            print("depth", self.depth, "r:", self.bounds)
+            return self.children[q].insert_point(point)
 
     def __create_subquad(self):
         """
@@ -94,7 +102,7 @@ class Quad:
         # Case 2: If the sub-quad has children, check for points in them
         elif self.children:
             q = self.__get_quadrant(point)
-            return self.children[q].find_quad(point)
+            self.children[q].find_quad(point)
 
     def get_parent(self):
         """
@@ -121,10 +129,29 @@ class Quad:
         self.children = {}
 
     def pop(self, point):
+        """
+        Removes the point from the appropriate quadrant
+        Deletes the quadrant if all children are empty
+        """
+
+        # Base Case: No children exist then check if point is stored in current quad
         if not self.children:
             if point in self.points:
-                return self.points.discard(point)
+                self.points.remove(point)
 
+        # Case 2: If children exist, remove point inside them
         if self.children:
             q = self.__get_quadrant(point)
             self.children[q].pop(point)
+
+        # Clean-up case: if empty children exist, clear them
+        # The previous case implies we are at the deepest quad already
+        empty = True
+        parent = self.get_parent()
+        if parent:
+            for child in parent.children:
+                if child or child.points:
+                    empty = False
+                    break
+        if empty:
+            parent.clear_children()
