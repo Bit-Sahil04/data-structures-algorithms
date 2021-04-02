@@ -3,13 +3,35 @@ from Quad import Quad
 from math import sqrt
 import random
 
+# Todo:
+# - Design a collision system with efficient use of quad tree (WIP)
+# - implement async highlight function
+# - Fix collision bug between points of diff radius in point.update() function
+# - fix pop operation
+# - test insert operation functionality
+# - Fix point collision bug
+# - Improve truncate_tree implementation
+# - find a way to efficiently store points without modifying the quad tree DS too much
+# - Restructure Quad.py to put core functions first followed by utility functions
+
+
+# FIXME: (optimization candidates)
+# Profiler report. Execution time: 52.3 seconds
+# - ncalls          tottime  percall  cumtime  percall  filename:lineno(function)
+# - 102870/78361    0.096    0.000   40.000    0.001    Quad.py:118(pop)
+# - 91807206/102870 36.328   0.000   39.788    0.000    Quad.py:148(dfs)
+# - 69038342        3.469    0.000    3.469    0.000    {built-in method builtins.len}
+# - 2201962/3646    1.392    0.000    4.278    0.001    quad_tree.py:38(update_quads)
+# - 493331          0.681    0.000   43.055    0.000    quad_tree.py:89(update)
+# - 1652383         0.670    0.000    0.670    0.000    Quad.py:106(get_outline)
+# - 102870          0.082    0.000   39.869    0.000    Quad.py:137(truncate_tree)
 
 RESOLUTION = (800, 600)
 win = pygame.display.set_mode(RESOLUTION)
 
 QUAD_COLOR = (128, 60, 128)
-BG_COLOR = (80, 0, 80)
-POINT_COLOR = (100, 255, 20)
+BG_COLOR = (90, 30, 110)
+POINT_COLOR = (255, 255, 255)  # (100, 255, 20)
 POINT_COLOR2 = (80, 255, 255)
 HIGHLIGHT_COLOR = (255, 255, 255)
 
@@ -24,13 +46,13 @@ def show_text(text, x, y, surf, size=10, color=(255, 255, 255)):
     return tRect
 
 
-def update_quads(screen, quad):
+def redraw_quads(screen, quad):
     line_width = 1
     if not quad.children:
-        pygame.draw.lines(screen, QUAD_COLOR, True, quad.get_outline(), line_width)
+        pygame.draw.lines(screen, BG_COLOR, True, quad.get_outline(), line_width)
     else:
         for k in quad.children:
-            update_quads(screen, quad.children[k])
+            redraw_quads(screen, quad.children[k])
 
 
 def main():
@@ -42,9 +64,10 @@ def main():
     quad_tree = Quad((1, 1, width - 1, height - 1), 1)
     points = []
     lmb = False
+    rmb = False
     while True:
         win.fill(BG_COLOR)
-        update_quads(win, quad_tree)
+        redraw_quads(win, quad_tree)
 
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
@@ -52,23 +75,33 @@ def main():
             if pygame.mouse.get_pressed(3)[0] and not lmb:
                 lmb = True
                 rp = pygame.mouse.get_pos()
-                p = Point(5, rp, (random.randint(-1, 3), random.randint(-1, 3)))
+                # generate random velocity of point except 0
+                p = Point(1, rp, (random.randint(-1, 2) or 1, random.randint(-1, 2) or 1))
                 p.quadrant = quad_tree.insert_point(rp)
                 points.append(p)
             else:
                 lmb = False
+            if pygame.mouse.get_pressed(3)[2]:
+                rmb = True
+                for i in points:
+                    mx, my = pygame.mouse.get_pos()
+                    dx = (mx - i.pos[0]) or 1
+                    dy = (my - i.pos[1]) or 1
+                    i.dv = (dx / abs(dx), dy / abs(dy))
+            else:
+                rmb = False
 
         for id, i in enumerate(points):
             i.update(quad_tree)
             pygame.draw.circle(win, POINT_COLOR, i.pos, i.radius)
 
-        show_text(f"{1000 / clock.tick() :.0f}", 100, 20, win, size=15)
+        # show_text(f"{1000 / clock.tick(60) :.0f}", 100, 20, win, size=15)
         show_text(f"{(len(points))}", 100, 40, win, size=15)
         pygame.display.flip()
 
 
 class Point:
-    def __init__(self, radius, pos, dv: (int, int)):
+    def __init__(self, radius, pos, dv):
         self.pos = pos
         self.dv = dv
         self.quadrant = None

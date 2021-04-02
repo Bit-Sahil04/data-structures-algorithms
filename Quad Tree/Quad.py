@@ -1,5 +1,5 @@
 class Quad:
-    max_points = 2
+    max_points = 5
     max_depth = 10
 
     def __init__(self, bounds: (int, int, int, int), depth: int, parent=None):
