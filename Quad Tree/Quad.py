@@ -1,6 +1,6 @@
 class Quad:
-    max_points = 0
-    max_depth = 3
+    max_points = 2
+    max_depth = 10
 
     def __init__(self, bounds: (int, int, int, int), depth: int, parent=None):
         self.depth = depth
@@ -38,22 +38,15 @@ class Quad:
         # Base Case:: either append points at max depth or append if quad has no children && does not exceed max pts
         if self.depth >= self.max_depth or (not self.children and len(self.points) < self.max_points):
             self.points.add(point)
-            print("latest  child", self.depth, "r:",self.bounds)
             return self
 
         # Case 2:: if quad has existing sub-quads, go to the appropriate sub-quad
         elif self.children:
-            #print(f"{self.depth} case 2 executed")
-            #print("if quad has existing sub-quads, go to the appropriate sub-quad")
-            #print("depth", self.depth, "r:", self.bounds)
             return self.children[q].insert_point(point)
 
         # Case 3:: If quad has no  children, and exceeds max pts, create sub-quad and insert pt in appropriate sub-quad
         else:
-            #print(f"{self.depth} case 3 executed")
-            #print("If quad has no  children, and exceeds max pts, create sub-quad and insert pt in appropriate sub-quad")
             self.children = self.__create_subquad()
-            print("depth", self.depth, "r:", self.bounds)
             return self.children[q].insert_point(point)
 
     def __create_subquad(self):
@@ -122,12 +115,6 @@ class Quad:
             (self.bounds[0], self.bounds[3]),
         ]
 
-    def clear_children(self):
-        """
-        Clear children of the current node
-        """
-        self.children = {}
-
     def pop(self, point):
         """
         Removes the point from the appropriate quadrant
@@ -144,14 +131,32 @@ class Quad:
             q = self.__get_quadrant(point)
             self.children[q].pop(point)
 
-        # Clean-up case: if empty children exist, clear them
-        # The previous case implies we are at the deepest quad already
-        empty = True
-        parent = self.get_parent()
-        if parent:
-            for child in parent.children:
-                if child or child.points:
-                    empty = False
-                    break
-        if empty:
-            parent.clear_children()
+        # Clean-up: check the tree and clear all empty sub-quads
+        self.truncate_tree()
+
+    def truncate_tree(self):
+        # TODO: more elegant soln?
+        """
+        Update the tree to clear all empty quadrants
+        """
+        # traversing back to the root quad
+        t = self
+        while t._parent:
+            t = t._parent
+
+        # perform DFS to check if a sub-quad is empty and prune it
+        def dfs(instance):
+            total = 0
+            if instance.children:
+                for k in instance.children:
+                    total += dfs(instance.children[k])
+            else:
+                return len(instance.points)
+
+            if total == 0:
+                instance.children = {}
+                return 0 + len(instance.points)
+            else:
+                return 1
+
+        dfs(t)
