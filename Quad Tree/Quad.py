@@ -1,6 +1,6 @@
 class Quad:
-    max_points = 5
-    max_depth = 10
+    max_points = 10
+    max_depth = 5
 
     def __init__(self, bounds: (int, int, int, int), depth: int, parent=None):
         self.depth = depth
@@ -10,15 +10,19 @@ class Quad:
         self.points = set()
         self.children = dict()
 
-    def __get_quadrant(self, point):
+    def __get_quadrant(self, point, flipY=True):
         """
         return normalized values xy <= {-1, 1} to find appropriate quad
+        Takes optional argument flipY if dealing with canvas with inverted Y axis
         """
         # Translating absolute coordinates to quadrant's relative coordinates
         cx = self.bounds[0] + (self.bounds[2] - self.bounds[0]) // 2
         cy = self.bounds[1] + (self.bounds[3] - self.bounds[1]) // 2
         px = (point[0] - cx)
-        py = (cy - point[1])  # Don't ask me why is this equation flipped
+        if flipY:
+            py = (cy - point[1])  # Y axis in pygame is flipped, so modified the eqn
+        else:
+            py = (point[1] - cy)
 
         return px / abs(px) if px != 0 else 1, py / abs(py) if py != 0 else 1
 
@@ -119,25 +123,30 @@ class Quad:
         """
         Removes the point from the appropriate quadrant
         Deletes the quadrant if all children are empty
+
+        Warning:
+            Rebuild the tree when updating many points
+            instead of deleting each point from a quad and updating the
+            tree, as this operation is very slow
         """
 
         # Base Case: No children exist then check if point is stored in current quad
         if not self.children:
             if point in self.points:
                 self.points.remove(point)
+                # Clean-up: check the parent of quadrant and clear if necessary
+                return self.clear_parent()
+            return self
 
         # Case 2: If children exist, remove point inside them
         if self.children:
             q = self.__get_quadrant(point)
-            self.children[q].pop(point)
-
-        # Clean-up: check the tree and clear all empty sub-quads
-        self.truncate_tree()
+            return self.children[q].pop(point)
 
     def truncate_tree(self):
-        # TODO: more elegant soln?
         """
-        Update the tree to clear all empty quadrants
+        Traverse the entire tree and clean all quadrants
+        (very slow)
         """
         # traversing back to the root quad
         t = self
@@ -160,3 +169,31 @@ class Quad:
                 return 1
 
         dfs(t)
+
+    def clear_tree(self):
+        """
+        Clear the entire tree
+        """
+        if self.children:
+            self.children = {}
+
+        if self.points:
+            self.points.clear()
+
+    def clear_parent(self):
+        """
+        recursively check if the parent quadrant is empty, and clean it
+        :return: instance of parent quad or self if root
+        """
+        parent = self.get_parent()
+        if parent is not self:
+            empty = True
+            for child in parent.children:
+                if parent.children[child].points or parent.children[child].children:
+                    empty = False
+                    break
+            if empty:
+                parent.children = {}
+                return parent.clear_parent()
+
+        return parent
