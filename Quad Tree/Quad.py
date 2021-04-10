@@ -123,11 +123,6 @@ class Quad:
         """
         Removes the point from the appropriate quadrant
         Deletes the quadrant if all children are empty
-
-        Warning:
-            Rebuild the tree when updating many points
-            instead of deleting each point from a quad and updating the
-            tree, as this operation is very slow
         """
 
         # Base Case: No children exist then check if point is stored in current quad
