@@ -1,5 +1,5 @@
 import pygame
-from Quad import Quad
+import Quad
 from math import sqrt
 import random
 
@@ -15,7 +15,7 @@ import random
 RESOLUTION = (800, 600)
 win = pygame.display.set_mode(RESOLUTION)
 
-QUAD_COLOR = (80, 150, 205)
+QUAD_COLOR = (128, 200, 128)
 BG_COLOR = (0, 0, 0)
 POINT_COLOR = (255, 255, 255)  # (100, 255, 20)
 POINT_COLOR2 = (255, 80, 255)
@@ -36,8 +36,9 @@ def redraw_quads(screen, quad):
     line_width = 1
     if not quad.children:
         pygame.draw.lines(screen, QUAD_COLOR, True, quad.get_outline(), line_width)
-        # for p in quad.points:
-        #     pygame.draw.circle(win, POINT_COLOR2, p, 1)
+        for p in quad.points:
+            pygame.draw.circle(win, POINT_COLOR2, p.pos, 1)
+            pygame.draw.line(win, QUAD_COLOR, p.pos, quad.bounds[:2])
     else:
         for k in quad.children:
             redraw_quads(screen, quad.children[k])
@@ -49,7 +50,7 @@ def main():
     width, height = RESOLUTION
     clock = pygame.time.Clock()
     win.fill(BG_COLOR)
-    quad_tree = Quad((1, 1, width - 1, height - 1), 1)
+    quad_tree = Quad.Quad((0, 0, width, height), 1)
     points = set()
     lmb = False
     rmb = False
@@ -64,9 +65,9 @@ def main():
                 lmb = True
                 rp = pygame.mouse.get_pos()
                 # generate random velocity of point except 0
-                for i in range(4):
+                for i in range(1):
                     p = Point(1, rp, (random.randint(-1, 2) or 1, random.randint(-1, 2) or 1))
-                    p.quadrant = quad_tree.insert_point(rp)
+                    p.quadrant = quad_tree.insert_point(p)
                     points.add(p)
             else:
                 lmb = False
@@ -83,6 +84,9 @@ def main():
         for id, i in enumerate(points):
             i.update(quad_tree)
             pygame.draw.circle(win, POINT_COLOR, i.pos, i.radius)
+            poly = i.quadrant.get_outline()
+            pygame.draw.lines(win, HIGHLIGHT_COLOR, 1, poly, 5)
+            pygame.draw.line(win, POINT_COLOR2, i.pos, i.quadrant.bounds[2:])
 
         show_text(f"{1000 / clock.tick(60) :.0f}", 100, 20, win, size=15)
         show_text(f"{(len(points))}", 100, 40, win, size=15)
@@ -90,23 +94,21 @@ def main():
         pygame.display.flip()
 
 
-class Point:
+class Point(Quad.Item):
     def __init__(self, radius, pos, dv):
-        self.pos = pos
+        super().__init__(pos)
         self.dv = dv
         self.quadrant = None
         self.radius = radius
-        self.entry_position = pos
 
     def update(self, root_quad):
         # add acceleration dv to point position
         self.pos = (self.pos[0] + self.dv[0], self.pos[1] + self.dv[1])
 
         # Update quad tree if the point exits the bounds of current quad
-        if not self.quadrant.has_point(self.pos):
-            temp = self.quadrant.pop(self.entry_position)
-            self.entry_position = self.pos
-            self.quadrant = root_quad.insert_point(self.entry_position)
+        if not self.quadrant.has_point(self):
+            self.quadrant.pop(self)
+            self.quadrant = root_quad.insert_point(self)
 
         if self.collision_x():
             self.dv = (self.dv[0] * -1, self.dv[1])

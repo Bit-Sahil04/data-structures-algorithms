@@ -1,5 +1,14 @@
+class Item:
+    """
+    Serves as an End Point for the quad tree to store coordinates
+    make sure to call super().__init__((x,y)) when inherited
+    """
+    def __init__(self, pos):
+        self.pos = pos
+
+
 class Quad:
-    max_points = 10
+    max_points = 1
     max_depth = 5
 
     def __init__(self, bounds: (int, int, int, int), depth: int, parent=None):
@@ -10,7 +19,7 @@ class Quad:
         self.points = set()
         self.children = dict()
 
-    def __get_quadrant(self, point, flipY=True):
+    def __get_quadrant(self, point: Item, flipY=True):
         """
         return normalized values xy <= {-1, 1} to find appropriate quad
         Takes optional argument flipY if dealing with canvas with inverted Y axis
@@ -18,21 +27,22 @@ class Quad:
         # Translating absolute coordinates to quadrant's relative coordinates
         cx = self.bounds[0] + (self.bounds[2] - self.bounds[0]) // 2
         cy = self.bounds[1] + (self.bounds[3] - self.bounds[1]) // 2
-        px = (point[0] - cx)
+        px = (point.pos[0] - cx)
         if flipY:
-            py = (cy - point[1])  # Y axis in pygame is flipped, so modified the eqn
+            py = (cy - point.pos[1])  # Y axis in pygame is flipped, so modified the eqn
         else:
-            py = (point[1] - cy)
+            py = (point.pos[1] - cy)
 
         return px / abs(px) if px != 0 else 1, py / abs(py) if py != 0 else 1
 
-    def has_point(self, point):
+    def has_point(self, point: Item):
         """
         Returns True if a point exists within the region of the quadrant
         """
-        return self.bounds[0] < point[0] < self.bounds[2] and self.bounds[1] < point[1] < self.bounds[3]
+        within_region = self.bounds[0] < point.pos[0] < self.bounds[2] and self.bounds[1] < point.pos[1] < self.bounds[3]
+        return (not self.children) and within_region
 
-    def insert_point(self, point):
+    def insert_point(self, point: Item):
         """
         Append a point to a quadrant or generate a new sub-quad and append to that quad
         Return deepest quad containing point
@@ -42,6 +52,7 @@ class Quad:
         # Base Case:: either append points at max depth or append if quad has no children && does not exceed max pts
         if self.depth >= self.max_depth or (not self.children and len(self.points) < self.max_points):
             self.points.add(point)
+            #self.points.append(point)
             return self
 
         # Case 2:: if quad has existing sub-quads, go to the appropriate sub-quad
@@ -67,7 +78,7 @@ class Quad:
         b_SW = (self.bounds[0], cy, cx, self.bounds[3])
         b_SE = (cx, cy, self.bounds[2], self.bounds[3])
 
-        # Create quadrants
+        # Create child quadrants
         subtrees = {
             (-1, 1): Quad(b_NW, self.depth + 1, parent=self),
             (1, 1): Quad(b_NE, self.depth + 1, parent=self),
@@ -75,12 +86,12 @@ class Quad:
             (1, -1): Quad(b_SE, self.depth + 1, parent=self),
         }
 
-        # Placing parent points in appropriate sub-quadrants
+        # Placing current node's points in appropriate sub-quadrants
         for p in self.points:
             q = self.__get_quadrant(p)
             subtrees[q].insert_point(p)
 
-        # remove points stored in parent node
+        # remove points stored in current node
         self.points.clear()
 
         return subtrees
@@ -119,7 +130,7 @@ class Quad:
             (self.bounds[0], self.bounds[3]),
         ]
 
-    def pop(self, point):
+    def pop(self, point: Item):
         """
         Removes the point from the appropriate quadrant
         Deletes the quadrant if all children are empty
