@@ -8,8 +8,8 @@ class Item:
 
 
 class Quad:
-    max_points = 1
-    max_depth = 5
+    max_points = 5
+    max_depth = 6
 
     def __init__(self, bounds: (int, int, int, int), depth: int, parent=None):
         self.depth = depth
@@ -89,7 +89,7 @@ class Quad:
         # Placing current node's points in appropriate sub-quadrants
         for p in self.points:
             q = self.__get_quadrant(p)
-            subtrees[q].insert_point(p)
+            p.quadrant = subtrees[q].insert_point(p)
 
         # remove points stored in current node
         self.points.clear()

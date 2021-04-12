@@ -4,7 +4,6 @@ from math import sqrt
 import random
 
 # Todo:
-# - Design a point or node class and operate on those objects instead of pure coordinates
 # - Design a collision system with efficient use of quad tree (WIP)
 # - Fix collision bug between points of diff radius in point.update() function (WIP)
 # - Restructure Quad.py to put core functions first followed by utility functions
@@ -38,7 +37,6 @@ def redraw_quads(screen, quad):
         pygame.draw.lines(screen, QUAD_COLOR, True, quad.get_outline(), line_width)
         for p in quad.points:
             pygame.draw.circle(win, POINT_COLOR2, p.pos, 1)
-            pygame.draw.line(win, QUAD_COLOR, p.pos, quad.bounds[:2])
     else:
         for k in quad.children:
             redraw_quads(screen, quad.children[k])
@@ -65,7 +63,7 @@ def main():
                 lmb = True
                 rp = pygame.mouse.get_pos()
                 # generate random velocity of point except 0
-                for i in range(1):
+                for i in range(4):
                     p = Point(1, rp, (random.randint(-1, 2) or 1, random.randint(-1, 2) or 1))
                     p.quadrant = quad_tree.insert_point(p)
                     points.add(p)
@@ -84,9 +82,6 @@ def main():
         for id, i in enumerate(points):
             i.update(quad_tree)
             pygame.draw.circle(win, POINT_COLOR, i.pos, i.radius)
-            poly = i.quadrant.get_outline()
-            pygame.draw.lines(win, HIGHLIGHT_COLOR, 1, poly, 5)
-            pygame.draw.line(win, POINT_COLOR2, i.pos, i.quadrant.bounds[2:])
 
         show_text(f"{1000 / clock.tick(60) :.0f}", 100, 20, win, size=15)
         show_text(f"{(len(points))}", 100, 40, win, size=15)
