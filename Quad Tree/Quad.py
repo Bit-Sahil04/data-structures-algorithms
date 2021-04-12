@@ -155,13 +155,11 @@ class Quad:
         if not self.children:
             if point in self.points:
                 return self
-
             return None
 
         # Case 2: If the sub-quad has children, check for points in them
-        elif self.children:
-            q = self.__get_quadrant(point)
-            self.children[q].find_quad(point)
+        q = self.__get_quadrant(point)
+        self.children[q].find_quad(point)
 
     def get_parent(self):
         """
