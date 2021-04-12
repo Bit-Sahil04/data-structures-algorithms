@@ -9,14 +9,14 @@ import random
 # - https://geidav.wordpress.com/2017/12/02/advanced-octrees-4-finding-neighbor-nodes/
 # - implement async highlight function
 
-RESOLUTION = (800, 600)
+RESOLUTION = (850, 850)
 win = pygame.display.set_mode(RESOLUTION)
 
-QUAD_COLOR = (128, 200, 128)
+QUAD_COLOR = (128, 128, 128)
 BG_COLOR = (0, 0, 0)
 POINT_COLOR = (255, 255, 255)  # (100, 255, 20)
 POINT_COLOR2 = (255, 80, 255)
-HIGHLIGHT_COLOR = (255, 255, 255)
+HIGHLIGHT_COLOR = (255, 0, 0)
 
 
 def show_text(text, x, y, surf, size=10, color=(255, 255, 255)):
@@ -33,8 +33,6 @@ def redraw_quads(screen, quad):
     line_width = 1
     if not quad.children:
         pygame.draw.lines(screen, QUAD_COLOR, True, quad.get_outline(), line_width)
-        for p in quad.points:
-            pygame.draw.circle(win, POINT_COLOR2, p.pos, 1)
     else:
         for k in quad.children:
             redraw_quads(screen, quad.children[k])
@@ -50,6 +48,7 @@ def main():
     points = set()
     lmb = False
     rmb = False
+    spawn_point_count = 4
 
     while True:
         win.fill(BG_COLOR)
@@ -61,8 +60,8 @@ def main():
                 lmb = True
                 rp = pygame.mouse.get_pos()
                 # generate random velocity of point except 0
-                for i in range(1):
-                    p = Point(2, rp, (random.randint(-1, 2) or 1, random.randint(-1, 2) or 1))
+                for i in range(spawn_point_count):
+                    p = Point(3, rp, (random.randint(-1, 2) or 1, random.randint(-1, 2) or 1))
                     p.quadrant = quad_tree.insert_point(p)
                     points.add(p)
             else:
@@ -77,7 +76,7 @@ def main():
             else:
                 rmb = False
 
-        for id, i in enumerate(points):
+        for num, i in enumerate(points):
             i.update(quad_tree)
             pygame.draw.circle(win, POINT_COLOR, i.pos, i.radius)
 
@@ -109,8 +108,7 @@ class Point(Quad.Item):
         if self.collision_y():
             self.dv = (self.dv[0], self.dv[1] * -1)
 
-        if self.collision_point():
-            pygame.draw.polygon(win, QUAD_COLOR, self.quadrant.get_outline())
+        self.collision_point()
 
     def collision_x(self):
         return (0 + self.radius * 2 > self.pos[0]) or (self.pos[0] > (RESOLUTION[0] - (self.radius * 2)))
@@ -120,16 +118,16 @@ class Point(Quad.Item):
 
     def collision_point(self):
         for p2 in self.quadrant.points:
-            pygame.draw.line(win, QUAD_COLOR, self.pos, p2.pos)
             if p2 != self:
+                pygame.draw.line(win, POINT_COLOR2, self.pos, p2.pos, 1)
                 px = p2.pos[0] + p2.radius
                 py = p2.pos[1] + p2.radius
-
                 dx = sqrt(((self.pos[0] + self.radius) - px) ** 2 + ((self.pos[1] + self.radius) - py) ** 2)
-
                 if dx <= self.radius:
                     self.dv = (self.dv[0] * -1, self.dv[1] * -1)
                     p2.dv = (p2.dv[0] * -1, p2.dv[1] * -1)
+                    pygame.draw.circle(win, HIGHLIGHT_COLOR, p2.pos, p2.radius + 10, 1)
+                    pygame.draw.circle(win, HIGHLIGHT_COLOR, self.pos, self.radius + 10, 1)
                     return True
 
         return False
