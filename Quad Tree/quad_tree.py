@@ -4,8 +4,6 @@ from math import sqrt
 import random
 
 # Todo:
-# - Design a collision system with efficient use of quad tree (WIP)
-# - Fix collision bug between points of diff radius in point.update() function (WIP)
 # - Restructure Quad.py to put core functions first followed by utility functions
 # - Implement neighbour finding algorithm for more efficient insertion
 # - https://geidav.wordpress.com/2017/12/02/advanced-octrees-4-finding-neighbor-nodes/
@@ -63,8 +61,8 @@ def main():
                 lmb = True
                 rp = pygame.mouse.get_pos()
                 # generate random velocity of point except 0
-                for i in range(4):
-                    p = Point(1, rp, (random.randint(-1, 2) or 1, random.randint(-1, 2) or 1))
+                for i in range(1):
+                    p = Point(2, rp, (random.randint(-1, 2) or 1, random.randint(-1, 2) or 1))
                     p.quadrant = quad_tree.insert_point(p)
                     points.add(p)
             else:
@@ -111,8 +109,8 @@ class Point(Quad.Item):
         if self.collision_y():
             self.dv = (self.dv[0], self.dv[1] * -1)
 
-        # if self.collision_point():
-        #    self.dv = (self.dv[0] * -1, self.dv[1] * -1)
+        if self.collision_point():
+            pygame.draw.polygon(win, QUAD_COLOR, self.quadrant.get_outline())
 
     def collision_x(self):
         return (0 + self.radius * 2 > self.pos[0]) or (self.pos[0] > (RESOLUTION[0] - (self.radius * 2)))
@@ -122,12 +120,16 @@ class Point(Quad.Item):
 
     def collision_point(self):
         for p2 in self.quadrant.points:
-            pygame.draw.line(win, QUAD_COLOR, self.pos, p2)
-            if p2 != self.pos:
-                px = p2[0] + self.radius
-                py = p2[1] + self.radius
+            pygame.draw.line(win, QUAD_COLOR, self.pos, p2.pos)
+            if p2 != self:
+                px = p2.pos[0] + p2.radius
+                py = p2.pos[1] + p2.radius
+
                 dx = sqrt(((self.pos[0] + self.radius) - px) ** 2 + ((self.pos[1] + self.radius) - py) ** 2)
-                if dx == 0:
+
+                if dx <= self.radius:
+                    self.dv = (self.dv[0] * -1, self.dv[1] * -1)
+                    p2.dv = (p2.dv[0] * -1, p2.dv[1] * -1)
                     return True
 
         return False

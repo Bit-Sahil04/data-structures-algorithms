@@ -3,6 +3,7 @@ class Item:
     Serves as an End Point for the quad tree to store coordinates
     make sure to call super().__init__((x,y)) when inherited
     """
+
     def __init__(self, pos):
         self.pos = pos
 
@@ -39,7 +40,8 @@ class Quad:
         """
         Returns True if a point exists within the region of the quadrant
         """
-        within_region = self.bounds[0] < point.pos[0] < self.bounds[2] and self.bounds[1] < point.pos[1] < self.bounds[3]
+        within_region = self.bounds[0] < point.pos[0] < self.bounds[2] and self.bounds[1] < point.pos[1] < self.bounds[
+            3]
         return (not self.children) and within_region
 
     def insert_point(self, point: Item):
@@ -52,7 +54,7 @@ class Quad:
         # Base Case:: either append points at max depth or append if quad has no children && does not exceed max pts
         if self.depth >= self.max_depth or (not self.children and len(self.points) < self.max_points):
             self.points.add(point)
-            #self.points.append(point)
+            # self.points.append(point)
             return self
 
         # Case 2:: if quad has existing sub-quads, go to the appropriate sub-quad
