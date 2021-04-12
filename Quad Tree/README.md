@@ -5,7 +5,6 @@ Point-region (PR) quadtree Data structure implementation in python and its visua
 requires pygame 2
 
 ## Todo:
-- Restructure Quad.py to put core functions first followed by utility functions
 - Implement neighbour finding algorithm for more efficient insertion <br>
 	https://geidav.wordpress.com/2017/12/02/advanced-octrees-4-finding-neighbor-nodes/
 - implement async highlight function
