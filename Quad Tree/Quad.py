@@ -6,7 +6,6 @@ class Item:
 
     def __init__(self, pos):
         self.pos = pos
-        self.parent = None
         self.quadrant = None
 
 
@@ -39,9 +38,8 @@ class Quad:
             return self.children[q].insert_point(point)
 
         # Case 3:: If quad has no  children, and exceeds max pts, create sub-quad and insert pt in appropriate sub-quad
-        else:
-            self.children = self.__create_subquad()
-            return self.children[q].insert_point(point)
+        self.children = self.__create_subquad()
+        return self.children[q].insert_point(point)
 
     def pop(self, point: Item):
         """
@@ -157,8 +155,8 @@ class Quad:
         if not self.children:
             if point in self.points:
                 return self
-            else:
-                return None
+
+            return None
 
         # Case 2: If the sub-quad has children, check for points in them
         elif self.children:
@@ -205,7 +203,7 @@ class Quad:
             if total == 0:
                 instance.children = {}
                 return 0 + len(instance.points)
-            else:
-                return 1
+
+            return 1
 
         dfs(t)
