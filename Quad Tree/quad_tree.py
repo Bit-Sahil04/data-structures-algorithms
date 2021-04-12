@@ -3,12 +3,6 @@ import Quad
 from math import sqrt
 import random
 
-# Todo:
-# - Restructure Quad.py to put core functions first followed by utility functions
-# - Implement neighbour finding algorithm for more efficient insertion
-# - https://geidav.wordpress.com/2017/12/02/advanced-octrees-4-finding-neighbor-nodes/
-# - implement async highlight function
-
 RESOLUTION = (850, 850)
 win = pygame.display.set_mode(RESOLUTION)
 
@@ -90,7 +84,6 @@ class Point(Quad.Item):
     def __init__(self, radius, pos, dv):
         super().__init__(pos)
         self.dv = dv
-        self.quadrant = None
         self.radius = radius
 
     def update(self, root_quad):

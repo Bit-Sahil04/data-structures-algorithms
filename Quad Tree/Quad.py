@@ -6,6 +6,8 @@ class Item:
 
     def __init__(self, pos):
         self.pos = pos
+        self.parent = None
+        self.quadrant = None
 
 
 class Quad:
@@ -19,31 +21,6 @@ class Quad:
 
         self.points = set()
         self.children = dict()
-
-    def __get_quadrant(self, point: Item, flipY=True):
-        """
-        return normalized values xy <= {-1, 1} to find appropriate quad
-        Takes optional argument flipY if dealing with canvas with inverted Y axis
-        """
-        # Translating absolute coordinates to quadrant's relative coordinates
-        cx = self.bounds[0] + (self.bounds[2] - self.bounds[0]) // 2
-        cy = self.bounds[1] + (self.bounds[3] - self.bounds[1]) // 2
-        px = (point.pos[0] - cx)
-        if flipY:
-            py = (cy - point.pos[1])  # Y axis in pygame is flipped, so modified the eqn
-        else:
-            py = (point.pos[1] - cy)
-
-        return px / abs(px) if px != 0 else 1, py / abs(py) if py != 0 else 1
-
-    def has_point(self, point: Item):
-        """
-        Returns True if a point exists within the region of the quadrant
-        and if the quadrant is at the deepest level
-        """
-        within_region = self.bounds[0] < point.pos[0] < self.bounds[2] and self.bounds[1] < point.pos[1] < self.bounds[
-            3]
-        return (not self.children) and within_region
 
     def insert_point(self, point: Item):
         """
@@ -113,6 +90,22 @@ class Quad:
 
         return parent
 
+    def __get_quadrant(self, point: Item, flipY=True):
+        """
+        return normalized values xy <= {-1, 1} to find appropriate quad
+        Takes optional argument flipY if dealing with canvas with inverted Y axis
+        """
+        # Translating absolute coordinates to quadrant's relative coordinates
+        cx = self.bounds[0] + (self.bounds[2] - self.bounds[0]) // 2
+        cy = self.bounds[1] + (self.bounds[3] - self.bounds[1]) // 2
+        px = (point.pos[0] - cx)
+        if flipY:
+            py = (cy - point.pos[1])  # Y axis in pygame is flipped, so modified the eqn
+        else:
+            py = (point.pos[1] - cy)
+
+        return px / abs(px) if px != 0 else 1, py / abs(py) if py != 0 else 1
+
     def __create_subquad(self):
         """
         Create a new sub-quadrant for the parent quad
@@ -136,6 +129,7 @@ class Quad:
         }
 
         # Placing current node's points in appropriate sub-quadrants
+        # Also update each point's current quad as the new sub-quad
         for p in self.points:
             q = self.__get_quadrant(p)
             p.quadrant = subtrees[q].insert_point(p)
@@ -144,6 +138,16 @@ class Quad:
         self.points.clear()
 
         return subtrees
+
+    def has_point(self, point: Item):
+        """
+        Returns True if a point exists within the region of the quadrant
+        and if the quadrant is at the deepest level
+        """
+        within_region = self.bounds[0] < point.pos[0] < self.bounds[2] and \
+                        self.bounds[1] < point.pos[1] < self.bounds[3]
+
+        return (not self.children) and within_region
 
     def find_quad(self, point):
         """
